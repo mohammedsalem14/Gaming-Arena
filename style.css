@@ -1,0 +1,6 @@
+/* Ensure the body has a dark background and the Inter font */
+/* The font is now loaded via a <link> tag in the HTML head */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0d1117; /* Dark charcoal */
+}
