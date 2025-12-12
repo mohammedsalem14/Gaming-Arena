@@ -48,12 +48,13 @@
             <p class="text-gray-400 mt-2 text-lg">Just tell us the game and what bundle/pass you need.</p>
         </header>
 
-        <!-- ORDER FORM (Standard POST Submission) -->
-        <form action="https://api.web3forms.com/submit" method="POST" 
-              class="space-y-6 bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700/50">
-            
-            <!-- Mandatory Web3Forms Access Key -->
-            <input type="hidden" name="access_key" value="c0b217eb-9e66-4470-8f51-907b26e75eec">
+        <!-- Confirmation Message Box (Hidden by default, used instead of alert()) -->
+        <div id="confirmationMessage" class="hidden p-4 mb-6 rounded-lg border-2 bg-gray-900/70 text-center shadow-lg transition-all duration-300">
+            <!-- Content populated by JavaScript -->
+        </div>
+
+        <!-- ORDER FORM (JS Fetch Submission) -->
+        <form id="form" class="space-y-6 bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700/50">
             
             <!-- Optional Subject Field -->
             <input type="hidden" name="_subject" value="New Game/Bundle Order Request">
@@ -61,10 +62,7 @@
             <!-- Optional field to customize the form identifier -->
             <input type="hidden" name="_wp" value="Game_Order_Page_Simple">
 
-            <!-- Optional: Define a redirect URL after successful submission -->
-            <input type="hidden" name="_next" value="YOUR_THANK_YOU_PAGE_URL"> 
-
-            <!-- GAME NAME Input (New field as requested) -->
+            <!-- GAME NAME Input -->
             <div>
                 <label for="gameName" class="block text-lg font-semibold mb-2 text-accent-cyan">Game Name:</label>
                 <input type="text" id="gameName" name="Game_Name" required placeholder="e.g., Baldur's Gate 3, Fortnite" 
@@ -114,6 +112,86 @@
 
     </div>
     
-    <!-- Since this is a standard POST, Web3Forms handles the success/failure page redirect. -->
+    <!-- JAVASCRIPT LOGIC (Using Fetch API for submission) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('form');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const confirmationBox = document.getElementById('confirmationMessage');
+            // The access key is hardcoded here, as requested by the user's JS snippet
+            const ACCESS_KEY = "c0b217eb-9e66-4470-8f51-907b26e75eec"; 
+
+            function showMessage(message, isSuccess = true) {
+                // Clear existing classes and set visibility
+                confirmationBox.className = 'p-4 mb-6 rounded-lg border-2 bg-gray-900/70 text-center shadow-lg transition-all duration-300';
+                confirmationBox.classList.remove('hidden');
+
+                const colorClass = isSuccess ? 'border-green-400 text-green-400' : 'border-red-400 text-red-400';
+                const icon = isSuccess ? '✅' : '❌';
+                
+                confirmationBox.classList.add(colorClass);
+                confirmationBox.innerHTML = `<p class="font-semibold">${icon} ${message}</p>`;
+            }
+            
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                // Hide previous messages
+                confirmationBox.classList.add('hidden');
+
+                const formData = new FormData(form);
+                formData.append("access_key", ACCESS_KEY);
+
+                const originalText = submitBtn.textContent;
+
+                // Set loading state
+                submitBtn.textContent = "Sending...";
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                // Show processing message (Styling is slightly different for processing)
+                showMessage("Processing your order...", false); 
+                confirmationBox.classList.remove('border-red-400', 'text-red-400');
+                confirmationBox.classList.add('border-accent-cyan', 'text-accent-cyan');
+
+
+                try {
+                    const response = await fetch("https://api.web3forms.com/submit", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        // Success!
+                        showMessage("Order Sent! We'll hit you up ASAP.", true);
+                        form.reset();
+                    } else {
+                        // Handle API errors
+                        console.error("Web3Forms error:", data);
+                        let errorMsg = data.message || "An unknown server error occurred, ikr?";
+                        
+                        // Specific handling for the security error mentioned before
+                        if (errorMsg.includes("security reasons")) {
+                             errorMsg = "Submission blocked for security reasons. Deploy to a live domain to fix this, bet?";
+                        }
+
+                        showMessage(`Error: ${errorMsg}`, false);
+                    }
+
+                } catch (error) {
+                    // Handle network errors
+                    console.error("Fetch error:", error);
+                    showMessage("Damnnn, Network Error: Could not connect to the API. Try again, frrr.", false);
+                } finally {
+                    // Reset button state
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
